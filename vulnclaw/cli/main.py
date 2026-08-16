@@ -118,7 +118,7 @@ def _emit_solve_report_if_completed(agent: Any, config: Any) -> str:
         console.print(Text(report_text), soft_wrap=True)
     return str(report_path)
 
-# 鈹€鈹€ REPL 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── REPL ────────────────────────────────────────────────────────────
 
 
 def _prepare_repl_target(
@@ -931,7 +931,7 @@ def _print_run_completion_summary(summary: dict[str, Any]) -> None:
     )
 
 
-# 鈹€鈹€ Sub-commands 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Sub-commands ────────────────────────────────────────────────────
 
 
 app = typer.Typer(
@@ -940,6 +940,23 @@ app = typer.Typer(
     no_args_is_help=False,
     add_completion=False,
 )
+
+
+def _confirm_authorized_target(target: str, *, yes: bool, non_interactive: bool = False) -> None:
+    """Consent gate before offensive actions (run / exploit) start.
+
+    Interactive terminals get a y/N prompt; ``--yes``, ``--non-interactive``
+    (CI) and piped stdin (Rust TUI, scripting) bypass it — matching the
+    documented automation contract.
+    """
+    if yes or non_interactive or not sys.stdin.isatty():
+        return
+    answer = input(
+        f"[?] Confirm target '{target}' is explicitly authorized for testing (y/N): "
+    )
+    if answer.strip().lower() not in ("y", "yes"):
+        err_console.print("[!] Aborted: no consent given for the target.")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -1055,6 +1072,11 @@ def run(
         "--stream",
         help="Emit newline-delimited JSON events (status/log/finding/complete) for the Rust TUI",
     ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        help="Skip the authorization confirmation prompt (automation; implies consent)",
+    ),
 ) -> None:
     """Run a full authorized pentest workflow.
 
@@ -1082,6 +1104,8 @@ def run(
     if engine is not None and engine not in ENGINE_CHOICES:
         err_console.print(f"[!] --engine must be one of: {', '.join(ENGINE_CHOICES)}")
         raise typer.Exit(headless.EXIT_ERROR)
+
+    _confirm_authorized_target(target, yes=yes, non_interactive=non_interactive)
 
     profile = headless.resolve_scan_profile(
         config,
@@ -2083,6 +2107,11 @@ def exploit(
     stream: bool = typer.Option(
         False, "--stream", help="Emit newline-delimited JSON events for the Rust TUI"
     ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        help="Skip the authorization confirmation prompt (automation; implies consent)",
+    ),
 ) -> None:
     """Run exploitation only."""
     cve_hint = f" using {cve}" if cve else ""
@@ -2097,6 +2126,8 @@ def exploit(
     if violation is not None:
         err_console.print(f"[!] {violation}")
         raise typer.Exit(1)
+
+    _confirm_authorized_target(target, yes=yes)
 
     async def _run():
         async def runner(agent, _config):
@@ -2230,7 +2261,7 @@ def man_command(
     _print_cli_manual(topic, output_format)
 
 
-# 鈹€鈹€ Config sub-command group 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Config sub-command group ───────────────────────────────────────
 
 config_app = typer.Typer(help="Manage configuration")
 app.add_typer(config_app, name="config")
@@ -2340,7 +2371,7 @@ def config_provider(
         )
 
 
-# 鈹€鈹€ Init command 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Init command ────────────────────────────────────────────────────
 
 
 @app.command()
@@ -2365,7 +2396,7 @@ def init() -> None:
     console.print(_("cli.init.step_tui"))
 
 
-# 鈹€鈹€ Login / Logout commands 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Login / Logout commands ─────────────────────────────────
 
 
 @app.command()
@@ -2460,7 +2491,7 @@ def logout() -> None:
         console.print("[yellow]No stored OAuth tokens to remove.[/]")
 
 
-# 鈹€鈹€ Doctor command 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Doctor command ──────────────────────────────────────────────────
 
 
 @app.command()
@@ -2566,7 +2597,7 @@ def doctor() -> None:
         )
 
 
-# 鈹€鈹€ KB command 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── KB command ──────────────────────────────────────────────────────
 
 kb_app = typer.Typer(help="Security knowledge base commands")
 app.add_typer(kb_app, name="kb")
@@ -2933,7 +2964,7 @@ def target_state_clear_cmd(
 
 # Default command (no sub-command -> REPL)
 
-# 鈹€鈹€ Auto-pentest detection 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+# ── Auto-pentest detection ──────────────────────────────────────────
 
 
 def _should_auto_pentest(user_input: str, current_target: Optional[str]) -> bool:

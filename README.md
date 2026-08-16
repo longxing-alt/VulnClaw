@@ -73,10 +73,10 @@ VulnClaw 自动执行：
 - **漏洞检测插件体系** — 低耦合插件运行时 + 内置只读 Web 插件，结果自动汇入报告链路（`vulnclaw plugins`）
 - **50 个专项 Skill** — 覆盖 CTF、Web、内网、逆向、漏洞验证与授权红队知识库；Skill 只作为参考资料索引暴露给模型，正文需要模型主动调用 `load_skill_reference` 按需读取，不再作为强制剧本注入上下文
 - **编解码/加解密工具** — 29 种操作（Base64/Hex/URL/AES/JWT/Morse 等），LLM 可精确调用，不再靠猜测
-- **源码自动还原** — `fetch` / `http_probe_batch` 遇到 `highlight_file`、HTML 高亮源码或混杂 HTML/JS body 时会自动在 raw body 前追加 clean source；`http_probe_batch` 默认关闭 TLS 校验并记录完整响应头，避免丢失 `X-Powered-By` 等运行时证据；内置 `source_extract` 仍可用于按需重读历史 evidence，并固定危险 sink、表单与 endpoint 信号
+- **源码自动还原** — `fetch` / `http_probe_batch` 遇到 `highlight_file`、HTML 高亮源码或混杂 HTML/JS body 时会自动在 raw body 前追加 clean source；`http_probe_batch` 默认校验 TLS（如需对自签名目标关闭，可在请求参数中显式指定）并记录完整响应头，避免丢失 `X-Powered-By` 等运行时证据；内置 `source_extract` 仍可用于按需重读历史 evidence，并固定危险 sink、表单与 endpoint 信号
 - **本地命令验证** — 内置 `shell_command`，用于 `php -r` 反序列化验证、`curl` 精确请求、`rg`/`Select-String` 文件检索等 Codex-style 本地调试场景；raw stdout/stderr 完整写入 evidence，大输出进入模型时使用高信号预览
 - **运行时差分探测** — 内置 `runtime_diff_probe`，用于正则/字符串过滤器与运行时解析器不一致的场景，帮助模型批量生成并验证“过滤器漏过、解析器接受”的候选；PHP 序列化模式会提示目标/本地运行时版本差异，并把 PHP5 signed length 候选标记为必须远程验证，避免被本地新版 PHP 误杀
-- **Python 代码执行** — 内置 `python_execute` 工具，适合 payload 构造和响应解析；当前仍属高风险实验能力，不应视为强隔离沙箱
+- **Python 代码执行** — 内置 `python_execute` 工具，适合 payload 构造和响应解析；当前仍属高风险实验能力，不应视为强隔离沙箱，**默认关闭**（需在配置中显式开启 `safety.enable_python_execute`）
 - **批量 HTTP 探测** — 内置 `http_probe_batch`，用于一次比较多组 URL/参数/header/body/raw URL 变体，默认返回每个响应的完整 body，并在模型可见输出中展示实际请求面（method、URL、params、headers、cookies、body/json），减少重复 LLM 轮次和手写请求代码
 - **近成功防误停** — solve 保留证据闸门，并新增通用 `NO_PATH` 闸门：当源码 sink、表单/参数、请求面、本地 proof 或响应差异等高信号尚未耗尽时，不接受模型因单次 payload 无回显/远端 same-body 就提前判死
 - **持续性渗透测试** — 周期循环（默认 100 轮/周期 × 10 周期 = 1000 轮），每周期自动生成报告

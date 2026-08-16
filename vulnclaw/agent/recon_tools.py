@@ -307,7 +307,9 @@ _DOMAIN_QUERY = {
 def _make_client(cfg: Any):
     import httpx
 
-    return httpx.AsyncClient(verify=False, timeout=cfg.http_timeout, follow_redirects=True)
+    return httpx.AsyncClient(
+        verify=cfg.tls_verify, timeout=cfg.http_timeout, follow_redirects=True
+    )
 
 
 async def execute_space_search(agent: AgentContext, args: dict[str, Any]) -> str:

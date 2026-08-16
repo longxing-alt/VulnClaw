@@ -1486,7 +1486,7 @@ async def execute_http_probe_batch(agent: AgentContext, args: dict[str, Any]) ->
     base_url = str(args.get("base_url", "") or "").strip()
     timeout = _bounded_float(args.get("timeout", _HTTP_PROBE_DEFAULT_TIMEOUT), 1.0, 30.0)
     follow_redirects = bool(args.get("follow_redirects", True))
-    verify_tls = bool(args.get("verify_tls", False))
+    verify_tls = bool(args.get("verify_tls", True))
     max_body_chars = _coerce_nonnegative_int(
         args.get("max_body_chars"),
         default=_HTTP_PROBE_DEFAULT_BODY_CHARS_LIMIT,
@@ -1888,7 +1888,8 @@ async def execute_python(agent: AgentContext, args: dict[str, Any]) -> str:
     safety = getattr(agent.config, "safety", None)
     if safety is None or not safety.enable_python_execute:
         return (
-            "[!] python_execute is disabled. Set safety.enable_python_execute = true to enable it"
+            "[!] python_execute is disabled (default). Enable it explicitly for "
+            "trusted tasks: set safety.enable_python_execute = true in the config."
         )
 
     mode = _resolve_python_execute_mode(agent)
@@ -2109,6 +2110,20 @@ async def execute_brute_force(agent: AgentContext, args: dict[str, Any]) -> str:
 
     passwords = passwords[:20]
     total = len(passwords)
+
+    # Scope enforcement: the login URL is LLM-controlled — reject out-of-scope
+    # hosts/paths/ports before any request is sent.
+    parsed_url = urlparse(url)
+    bf_host = parsed_url.hostname or ""
+    bf_violation = enforce_host_path_constraints(
+        agent, host=bf_host, path=parsed_url.path or "", target=url
+    )
+    if bf_violation is not None:
+        return bf_violation
+    if parsed_url.port is not None:
+        bf_violation = enforce_port_constraints(agent, [parsed_url.port], target=url)
+        if bf_violation is not None:
+            return bf_violation
 
     try:
         import httpx

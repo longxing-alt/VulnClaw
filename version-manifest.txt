@@ -13,5 +13,5 @@ frontend/package-lock.json
 README.md
 README_EN.md
 vulnclaw/skills/specialized/osint-recon/references/recon-report-template.md
-tests/test_basic.py
-tests/test_release_workflow.py
+tests/meta/test_basic.py
+tests/meta/test_release_workflow.py

@@ -238,7 +238,7 @@ class TestBuiltinPythonExecute:
         assert "body:" in result
         assert "Same-body groups" in result
 
-    async def test_http_probe_batch_exposes_response_headers_and_defaults_tls_off(
+    async def test_http_probe_batch_exposes_response_headers_and_defaults_tls_on(
         self, monkeypatch
     ):
         import vulnclaw.agent.builtin_tools as builtin_tools
@@ -277,7 +277,7 @@ class TestBuiltinPythonExecute:
             {"base_url": "https://example.com/", "requests": [{"url": "/"}]},
         )
 
-        assert seen_client_kwargs[0]["verify"] is False
+        assert seen_client_kwargs[0]["verify"] is True
         assert "response_headers=" in result
         assert "PHP/5.6.40" in result
 

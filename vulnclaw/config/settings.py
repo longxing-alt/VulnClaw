@@ -82,6 +82,11 @@ def ensure_dirs() -> None:
     """Create VulnClaw config directories if they don't exist."""
     for d in [CONFIG_DIR, SESSIONS_DIR, TARGETS_DIR, RUNS_DIR, KB_DIR, SKILLS_DIR]:
         d.mkdir(parents=True, exist_ok=True)
+    try:
+        # The config dir holds API keys; keep it private to the current user.
+        os.chmod(CONFIG_DIR, 0o700)
+    except OSError:
+        pass
 
 
 def openai_default_headers() -> dict[str, str]:
@@ -142,6 +147,11 @@ def save_config(config: VulnClawConfig) -> None:
     _strip_defaults(raw)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         yaml.dump(raw, f, default_flow_style=False, allow_unicode=True)
+    try:
+        # The config file holds LLM / recon API keys; restrict to the owner.
+        os.chmod(CONFIG_FILE, 0o600)
+    except OSError:
+        pass
 
 
 def set_config_value(key: str, value: str) -> None:

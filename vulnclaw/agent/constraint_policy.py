@@ -173,7 +173,15 @@ def infer_tool_action(tool_name: str, args: dict[str, object]) -> str:
             )
         ):
             return "scan"
-        return "recon"
+        # Read-only network inspection stays recon; anything else is treated
+        # conservatively as exploit so --block-actions exploit cannot be
+        # bypassed by arbitrary shell commands (e.g. file-destructive ones).
+        if any(
+            marker in command
+            for marker in ("dig ", "nslookup ", "whois ", "host ", "ping ", "traceroute", "nmap ", "getent ")
+        ):
+            return "recon"
+        return "exploit"
 
     if normalized_tool == "brute_force_login":
         return "scan"

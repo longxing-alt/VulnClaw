@@ -46,7 +46,7 @@ def test_recon_scan_scope_allows_normal_probing():
         ("fetch", {"url": "http://t/login", "method": "POST", "body": "u=a&p=b"}),
         ("python_execute", {"code": "import requests\nrequests.get('http://t/')"}),
         ("shell_command", {"command": "curl -i http://t/robots.txt"}),
-        ("shell_command", {"command": "php -r \"echo serialize([1,2]);\""}),
+        ("shell_command", {"command": "dig example.com A"}),
     ]
     for name, args in allowed_cases:
         assert validate_tool_action(name, args, scope) is None, f"{name} should be allowed"
@@ -63,6 +63,8 @@ def test_actual_exploit_payloads_still_blocked():
         ("python_execute", {"code": "requests.get('http://t/?cmd=whoami')"}),
         ("shell_command", {"command": "curl 'http://t/?id=1 union select 1,2'"}),
         ("shell_command", {"command": "bash -i >& /dev/tcp/127.0.0.1/4444 0>&1"}),
+        # Arbitrary code runners default to exploit (conservative classification).
+        ("shell_command", {"command": "php -r \"echo serialize([1,2]);\""}),
     ]
     for name, args in blocked_cases:
         violation = validate_tool_action(name, args, scope)

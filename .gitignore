@@ -79,8 +79,7 @@ pnpm-debug.log*
 skills-lock.json
 CLAUDE.md
 
-# Local docs / local-only artifacts
-docs/
+# Local-only artifacts
 .test-tmp/
 版本号文件.png
 

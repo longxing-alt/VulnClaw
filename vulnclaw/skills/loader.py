@@ -232,8 +232,19 @@ def load_skill_reference(skill_name: str, ref_name: str) -> Optional[str]:
     if not skill or not skill.get("references_dir"):
         return None
 
-    ref_path = Path(skill["references_dir"]) / ref_name
-    if ref_path.exists() and ref_path.is_file():
-        return ref_path.read_text(encoding="utf-8")
+    # Block path traversal: ref_name is LLM-controlled, so it must be a plain
+    # file name (no separators / dot-dot), and must resolve inside the skill's
+    # references directory (defense in depth against symlinks / weird names).
+    if not ref_name or ref_name in (".", "..") or "/" in ref_name or "\\" in ref_name:
+        return None
+    ref_dir = Path(skill["references_dir"])
+    try:
+        resolved = (ref_dir / ref_name).resolve()
+        if not resolved.is_relative_to(ref_dir.resolve()):
+            return None
+    except (OSError, ValueError):
+        return None
+    if resolved.exists() and resolved.is_file():
+        return resolved.read_text(encoding="utf-8")
 
     return None

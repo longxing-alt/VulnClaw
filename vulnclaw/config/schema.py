@@ -260,6 +260,10 @@ class ReconConfig(BaseModel):
     shodan_key: str = Field(default="", description="Shodan API key")
     zerozone_key: str = Field(default="", description="零零信安 0.zone API key")
     http_timeout: float = Field(default=15.0, description="Per-request HTTP timeout (s)")
+    tls_verify: bool = Field(
+        default=True,
+        description="Verify TLS certificates for space-mapping engine API calls (set false only for isolated lab proxies)",
+    )
     max_concurrency: int = Field(default=20, description="Max concurrent recon requests")
     space_size: int = Field(default=100, description="Default result size per space-mapping query")
     dir_wordlist_path: str = Field(
@@ -277,8 +281,8 @@ class SafetyConfig(BaseModel):
     """Safety / sandbox configuration."""
 
     enable_python_execute: bool = Field(
-        default=True,
-        description="Enable the python_execute built-in tool (disable for safer runs)",
+        default=False,
+        description="Enable the python_execute built-in tool (off by default; turn on explicitly for trusted tasks)",
     )
     python_execute_restricted: bool = Field(
         default=False,
